@@ -217,6 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 80,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: _weekDays.length,
                   itemBuilder: (context, index) {
                     final day = _weekDays[index];
