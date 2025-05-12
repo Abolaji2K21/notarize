@@ -20,6 +20,17 @@ class _HomeScreenState extends State<HomeScreen> {
   late List<Note> _filteredNotes;
   late DateTime _selectedDay;
   late List<DateTime> _weekDays;
+  final List<Color> noteBoxColors = [
+  const Color(0xFFC2DCFD),
+  const Color(0xFFFFD8F4),
+  const Color(0xFFFBF6AA),
+  const Color(0xFFB0E9CA),
+  const Color(0xFFFCFAD9),
+  const Color(0xFFF1DBF5),
+  const Color(0xFFD9E8FC),
+  const Color(0xFFFFDBE3),
+];
+
   NoteCategory _selectedCategory = NoteCategory.all;
 
   @override
@@ -356,15 +367,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         itemCount: _filteredNotes.length,
                         itemBuilder: (context, index) {
-                          return NoteCard(
-                            note: _filteredNotes[index],
-                            onTap: () => _openNote(_filteredNotes[index]),
-                            onTogglePin: () =>
-                                _togglePin(_filteredNotes[index]),
-                          );
-                        },
+                            final note = _filteredNotes[index];
+                            final color = noteBoxColors[index % noteBoxColors.length];
+
+                            return NoteCard(
+                                 note: note,
+                                  onTap: () => _openNote(note),
+                                onTogglePin: () => _togglePin(note),
+                                color: color, // ✅ New parameter passed
+                                );
+                              },
                       ),
-              ),
+                    ),
             ],
           ),
         ),

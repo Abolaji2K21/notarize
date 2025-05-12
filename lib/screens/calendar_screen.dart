@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:notarize/data/sample_data.dart';
 import 'package:notarize/models/note.dart';
-import 'package:notarize/screens/note_editor_screen.dart';
 import 'package:notarize/theme/app_theme.dart';
 import 'package:notarize/widgets/note_card.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +25,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late DateTime _selectedDay;
   late DateTime _focusedDay;
   late CalendarFormat _calendarFormat;
+  final List<Color> noteBoxColors = [
+  const Color(0xFFC2DCFD),
+  const Color(0xFFFFD8F4),
+  const Color(0xFFFBF6AA),
+  const Color(0xFFB0E9CA),
+  const Color(0xFFF1DBF5),
+  const Color(0xFFD9E8FC),
+  const Color(0xFFFCFAD9),
+  const Color(0xFFFFDBE3),
+];
+
   
   final Map<DateTime, List<Note>> _events = {};
   
@@ -162,8 +172,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     note: note,
                     onTap: () {},
                     onTogglePin: () {
+                      
                       // Handle pin toggle
                     },
+                    color: noteBoxColors[index % noteBoxColors.length], 
+
                   ),
                 );
               },

@@ -6,12 +6,14 @@ class NoteCard extends StatelessWidget {
   final Note note;
   final VoidCallback onTap;
   final VoidCallback onTogglePin;
+  final Color color; // ✅ Add this
 
   const NoteCard({
     super.key,
     required this.note,
     required this.onTap,
     required this.onTogglePin,
+    required this.color, // ✅ Add this
   });
 
   @override
@@ -22,7 +24,7 @@ class NoteCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: note.category.color,
+          color: color, // ✅ Use passed-in color
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -44,7 +46,6 @@ class NoteCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Show pin icon only if note is pinned
                 note.isPinned
                     ? GestureDetector(
                         onTap: onTogglePin,
