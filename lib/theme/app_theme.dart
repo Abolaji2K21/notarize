@@ -9,7 +9,7 @@ class AppTheme {
   static const Color paleYellow = Color(0xFFFCFAD9);
   static const Color lightLavender = Color(0xFFF1DBF5);
   static const Color veryLightBlue = Color(0xFFD9E8FC);
-  static const Color veryLightPink = Color(0xFFFFFDBE3);
+  static const Color veryLightPink = Color(0xfffffdbe3);
   
   // App colors
   static const Color backgroundColor = Color(0xFFF0F2FA);
@@ -56,14 +56,12 @@ class AppTheme {
   static final ThemeData lightTheme = ThemeData(
     primaryColor: Colors.black,
     scaffoldBackgroundColor: backgroundColor,
-    colorScheme: ColorScheme.light(
+    colorScheme: const ColorScheme.light(
       primary: Colors.black,
       secondary: Colors.black,
-      background: backgroundColor,
       surface: cardColor,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
-      onBackground: textColor,
       onSurface: textColor,
     ),
     appBarTheme: const AppBarTheme(

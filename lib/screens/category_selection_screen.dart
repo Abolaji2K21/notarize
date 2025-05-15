@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:notarize/models/note.dart';
+import 'package:notarize/storage/helper.dart';
 import 'package:notarize/theme/app_theme.dart';
 
 class CategorySelectionScreen extends StatefulWidget {
   final NoteCategory currentCategory;
+  final String? customCategory;
+  
 
   const CategorySelectionScreen({
-    super.key,
+    Key? key,
     required this.currentCategory,
-  });
+    this.customCategory,
+  }) : super(key: key);
 
   @override
   State<CategorySelectionScreen> createState() => _CategorySelectionScreenState();
@@ -16,16 +20,17 @@ class CategorySelectionScreen extends StatefulWidget {
 
 class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   late NoteCategory _selectedCategory;
+  String? _selectedCustomCategory;
   final TextEditingController _newCategoryController = TextEditingController();
   bool _isAddingNewCategory = false;
-  
-  // List to store custom categories
   List<String> _customCategories = [];
 
   @override
   void initState() {
     super.initState();
     _selectedCategory = widget.currentCategory;
+    _selectedCustomCategory = widget.customCategory;
+    _loadCustomCategories();
   }
 
   @override
@@ -34,30 +39,65 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     super.dispose();
   }
 
+  // Load custom categories from SharedPreferences
+  Future<void> _loadCustomCategories() async {
+    _customCategories = await SharedPreferencesHelper.loadCustomCategories();
+    setState(() {});
+  }
+
+  // Save custom categories to SharedPreferences
+  Future<void> _saveCustomCategories() async {
+    await SharedPreferencesHelper.saveCustomCategories(_customCategories);
+  }
+
+  // Toggle the option to add a new category
   void _toggleAddNewCategory() {
     setState(() {
       _isAddingNewCategory = !_isAddingNewCategory;
     });
   }
 
+  // Save the selected category
   void _saveCategory() {
-    Navigator.pop(context, _selectedCategory);
+    Navigator.pop(context, {
+      'category': _selectedCategory,
+      'customCategory': _selectedCustomCategory,
+    });
   }
 
-  // Function to handle adding new custom categories
-  void _addCustomCategory() {
-    final newCategoryName = _newCategoryController.text.trim();
-    if (newCategoryName.isNotEmpty) {
-      setState(() {
-        _customCategories.add(newCategoryName);
-        _selectedCategory = NoteCategory.values.firstWhere(
-            (e) => e.toString() == 'NoteCategory.all', // You can choose a default
-            orElse: () => NoteCategory.all);
-      });
-      _newCategoryController.clear();
-      _toggleAddNewCategory(); // Close text field
-    }
+  // Add a new custom category
+void _addCustomCategory() async {
+  final newCategoryName = _newCategoryController.text.trim();
+  if (newCategoryName.isNotEmpty && !_customCategories.contains(newCategoryName)) {
+    setState(() {
+      _customCategories.add(newCategoryName);
+      _selectedCategory = NoteCategory.all; // Set to all for custom categories
+      _selectedCustomCategory = newCategoryName;
+    });
+    
+    // Debug print before saving
+    print('Adding new category: $newCategoryName');
+    print('Updated custom categories list: $_customCategories');
+    
+    // Make sure to await this
+    await _saveCustomCategories();
+    
+    // Debug print after saving
+    final savedCategories = await SharedPreferencesHelper.loadCustomCategories();
+    print('Categories after saving: $savedCategories');
+    
+    _newCategoryController.clear();
+    _toggleAddNewCategory();
+  } else if (newCategoryName.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Category name cannot be empty')),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('This category already exists')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -75,114 +115,31 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // Add new category input
                 if (_isAddingNewCategory)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: TextField(
-                      controller: _newCategoryController,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: 'Add a new category',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIcon: const Icon(Icons.add),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.check),
-                          onPressed: _addCustomCategory, // Add custom category
-                        ),
-                      ),
-                    ),
-                  )
+                  _buildNewCategoryInput()
                 else
-                  InkWell(
-                    onTap: _toggleAddNewCategory,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.add,
-                            color: Colors.black,
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            'Add a new category',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontFamily: 'Nunito',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                
-                // Category list from enum
-                _buildCategoryItem(NoteCategory.important),
-                _buildCategoryItem(NoteCategory.lectureNotes),
-                _buildCategoryItem(NoteCategory.todoList),
-                _buildCategoryItem(NoteCategory.shoppingList),
-                _buildCategoryItem(NoteCategory.homework),
-                _buildCategoryItem(NoteCategory.evening),
-                _buildCategoryItem(NoteCategory.classes),
-                _buildCategoryItem(NoteCategory.tour),
-                _buildCategoryItem(NoteCategory.rollerCoaster),
-                
-                // Custom category list
-                for (var category in _customCategories)
-                  _buildCustomCategoryItem(category),
+                  _buildAddNewButton(),
+                ...NoteCategory.values
+                    .where((e) => e != NoteCategory.all)
+                    .map((e) => _buildCategoryItem(e)),
+                ..._customCategories.map((e) => _buildCustomCategoryItem(e)),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 5,
-                  offset: const Offset(0, -3),
-                ),
-              ],
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveCategory,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Save'),
-              ),
-            ),
-          ),
+          _buildSaveButton()
         ],
       ),
     );
   }
 
+  // Build the category item
   Widget _buildCategoryItem(NoteCategory category) {
-    final isSelected = _selectedCategory == category;
-    
+    final isSelected = _selectedCategory == category && _selectedCustomCategory == null;
     return InkWell(
       onTap: () {
         setState(() {
           _selectedCategory = category;
+          _selectedCustomCategory = null;
         });
       },
       child: Container(
@@ -194,25 +151,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.black : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? Colors.black : Colors.grey,
-                  width: 2,
-                ),
-              ),
-              child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      size: 16,
-                      color: Colors.white,
-                    )
-                  : null,
-            ),
+            _buildCheckCircle(isSelected),
             const SizedBox(width: 16),
             Text(
               category.name,
@@ -228,15 +167,14 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     );
   }
 
-  // Widget to display custom category
-  Widget _buildCustomCategoryItem(String category) {
-    final isSelected = _selectedCategory.name == category;
-    
+  // Build the custom category item
+  Widget _buildCustomCategoryItem(String categoryName) {
+    final isSelected = _selectedCustomCategory == categoryName;
     return InkWell(
       onTap: () {
         setState(() {
-          _selectedCategory = NoteCategory.values.firstWhere(
-              (e) => e.name == 'all', orElse: () => NoteCategory.all);
+          _selectedCategory = NoteCategory.all; // Always set to all for custom categories
+          _selectedCustomCategory = categoryName;
         });
       },
       child: Container(
@@ -248,28 +186,10 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.black : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? Colors.black : Colors.grey,
-                  width: 2,
-                ),
-              ),
-              child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      size: 16,
-                      color: Colors.white,
-                    )
-                  : null,
-            ),
+            _buildCheckCircle(isSelected),
             const SizedBox(width: 16),
             Text(
-              category,
+              categoryName,
               style: const TextStyle(
                 fontSize: 16,
                 color: AppTheme.textColor,
@@ -277,6 +197,108 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // Build the check circle for selection
+  Widget _buildCheckCircle(bool isSelected) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.black : Colors.transparent,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isSelected ? Colors.black : Colors.grey,
+          width: 2,
+        ),
+      ),
+      child: isSelected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+    );
+  }
+
+  // Build the new category input
+  Widget _buildNewCategoryInput() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextField(
+        controller: _newCategoryController,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: 'Add a new category',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide.none,
+          ),
+          prefixIcon: const Icon(Icons.add),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: _addCustomCategory,
+          ),
+        ),
+        onSubmitted: (_) => _addCustomCategory(),
+      ),
+    );
+  }
+
+  // Build the button to add a new category
+  Widget _buildAddNewButton() {
+    return InkWell(
+      onTap: _toggleAddNewCategory,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.add, color: Colors.black),
+            SizedBox(width: 16),
+            Text(
+              'Add a new category',
+              style: TextStyle(
+                color: Colors.black,
+                fontFamily: 'Nunito',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Build the save button
+  Widget _buildSaveButton() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _saveCategory,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          child: const Text('Save'),
         ),
       ),
     );

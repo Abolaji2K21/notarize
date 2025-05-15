@@ -99,8 +99,9 @@ class Note {
   DateTime updatedAt;
   NoteCategory category;
   DateTime? date;
-  Color? iconColor;
+  Color? iconColor; 
   bool isPinned;
+  String? customCategory;  // <-- Added customCategory
 
   Note({
     required this.id,
@@ -112,6 +113,7 @@ class Note {
     this.date,
     this.iconColor,
     this.isPinned = false,
+    this.customCategory,  // <-- Added customCategory to constructor
   });
 
   Note copyWith({
@@ -121,7 +123,8 @@ class Note {
     NoteCategory? category,
     DateTime? date,
     Color? iconColor,
-    bool? isPinned
+    bool? isPinned,
+    String? customCategory,  // <-- Added customCategory to copyWith
   }) {
     return Note(
       id: id,
@@ -133,6 +136,7 @@ class Note {
       date: date ?? this.date,
       iconColor: iconColor ?? this.iconColor,
       isPinned: isPinned ?? this.isPinned,
+      customCategory: customCategory ?? this.customCategory,  // <-- Added customCategory
     );
   }
 
@@ -143,9 +147,11 @@ class Note {
       content: map['content'],
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt']),
-      isPinned: map['isPinned'] == 1, // SQLite stores bool as 1 or 0
+      isPinned: map['isPinned'] == 1, 
       category: NoteCategory.values.firstWhere((e) => e.toString() == map['category']),
-      date: DateTime.fromMillisecondsSinceEpoch(map['date']),
+      date: map['date'] != null ? DateTime.fromMillisecondsSinceEpoch(map['date']) : null,
+      iconColor: map['iconColor'] != null ? Color(map['iconColor']) : null,
+      customCategory: map['customCategory'],  // <-- Deserialize customCategory
     );
   }
 
@@ -159,6 +165,8 @@ class Note {
       'isPinned': isPinned ? 1 : 0,
       'category': category.toString(),
       'date': date?.millisecondsSinceEpoch,
+      'iconColor': iconColor?.value, 
+      'customCategory': customCategory,  // <-- Serialize customCategory
     };
   }
 }

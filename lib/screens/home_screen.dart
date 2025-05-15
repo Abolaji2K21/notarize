@@ -10,9 +10,11 @@ import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+  
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
+  
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -20,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late List<Note> _filteredNotes;
   late DateTime _selectedDay;
   late List<DateTime> _weekDays;
+  final TextEditingController _searchController = TextEditingController();
   final List<Color> noteBoxColors = [
   const Color(0xFFC2DCFD),
   const Color(0xFFFFD8F4),
@@ -58,19 +61,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _filterNotes();
   }
 
-  void _filterNotes() {
-    setState(() {
-      _filteredNotes = _notes.where((note) {
-        // Filter by category
-        if (_selectedCategory != NoteCategory.all &&
-            note.category != _selectedCategory) {
-          return false;
-        }
+void _filterNotes([String query = '']) {
+  setState(() {
+    _filteredNotes = _notes.where((note) {
+      final matchesCategory = _selectedCategory == NoteCategory.all || note.category == _selectedCategory;
+      final matchesQuery = query.isEmpty ||
+          note.title.toLowerCase().contains(query.toLowerCase()) ||
+          note.content.toLowerCase().contains(query.toLowerCase());
 
-        return true;
-      }).toList();
-    });
-  }
+      return matchesCategory && matchesQuery;
+    }).toList();
+  });
+}
 
   void _selectDay(DateTime day) {
     setState(() {
@@ -207,6 +209,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Search bar
               TextField(
+                  controller: _searchController,
+                  onChanged: _filterNotes, // 🔥 calls the filter function as user types
+
                 decoration: InputDecoration(
                   hintText: 'Search for notes',
                   prefixIcon: const Icon(Icons.search,
